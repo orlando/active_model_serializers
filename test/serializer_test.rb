@@ -1384,7 +1384,34 @@ class SerializerTest < ActiveSupport::TestCase
       assert_equal({:body => "body", :title => "title"},
                    child.new(item).attributes)
     end
+  end
 
+  def test_inheritance_parent_runtime_modification
+    parent = Class.new(ActiveModel::Serializer) do
+      attributes :title
+    end
+
+    child = Class.new(parent) do
+      attributes :body
+    end
+
+    data_class = Class.new do
+      include ActiveModel::Serializers::JSON
+      attr_accessor :title, :body, :name
+    end
+
+    item = data_class.new
+    item.title = "title"
+    item.body = "body"
+    item.name = "name"
+
+    # Modify parent after child definition
+    parent.attributes(:name)
+
+    assert_equal({:title => "title", :name => "name"},
+                 parent.new(item).attributes)
+    assert_equal({:body => "body", :title => "title", :name => "name"},
+                 child.new(item).attributes)
   end
 
   def test_scope_name_method
